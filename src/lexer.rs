@@ -8,7 +8,7 @@ pub enum JsonLexError {
     InvalidSyntax(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Constant {
     Float(f64),
     Int(isize),
@@ -43,8 +43,8 @@ impl FromStr for Constant {
     }
 }
 
-#[derive(Debug, Clone)]
-pub(crate) enum Token {
+#[derive(Debug, Clone, PartialEq)]
+pub enum Token {
     // StartOfSequence,
     StartOfDict,
     StartOfList,

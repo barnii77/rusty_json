@@ -1,12 +1,15 @@
-use crate::lexer::{tokenize, Constant, JsonLexError, Token, Tokenizer};
+use crate::lexer::{tokenize, Constant, JsonLexError, Token};
 use std::collections::HashMap;
 use thiserror::Error;
 
 // TODO create a datastructure that can store the json
 // TODO create a parser that can parse the tokenized json to this datastructure
 
+#[derive(Debug, Error)]
 pub enum JsonError {
+    #[error("JsonLexError: {0}")]
     JsonLexError(JsonLexError),
+    #[error("JsonParseError: {0}")]
     JsonParseError(JsonParseError),
 }
 
@@ -18,6 +21,7 @@ pub enum JsonParseError {
     UnexpectedEndOfInput,
 }
 
+#[derive(Debug)]
 pub enum Json {
     Dict(HashMap<String, Json>),
     List(Vec<Json>),
@@ -64,7 +68,7 @@ fn parse_dict(tokens: &[Token]) -> Result<Json, JsonParseError> {
             DictParseState::ExpectValue => {
                 match token {
                     Token::Constant(c) => {
-                        result_hashmap.insert(prev_key, Json::Value(c.clone()));
+                        result_hashmap.insert(prev_key.clone(), Json::Value(c.clone()));
                     }
                     Token::StartOfDict => {
                         // find end of dict
@@ -83,7 +87,7 @@ fn parse_dict(tokens: &[Token]) -> Result<Json, JsonParseError> {
                                                                 // ownership of tokens (this function won't need them anymore afterwards)
                         }
                         let sub_json = parse_dict(&context_tokens)?;
-                        result_hashmap.insert(prev_key, sub_json);
+                        result_hashmap.insert(prev_key.clone(), sub_json);
                     }
                     Token::StartOfList => {
                         // find end of dict
@@ -102,7 +106,7 @@ fn parse_dict(tokens: &[Token]) -> Result<Json, JsonParseError> {
                                                                 // ownership of tokens (this function won't need them anymore afterwards)
                         }
                         let sub_json = parse_list(&context_tokens)?;
-                        result_hashmap.insert(prev_key, sub_json);
+                        result_hashmap.insert(prev_key.clone(), sub_json);
                     }
                     _ => return Err(JsonParseError::UnexpectedToken(token.clone())),
                 }
@@ -214,16 +218,49 @@ pub fn parse(json: &str) -> Result<Json, JsonError> {
     };
     if first_token != last_token {
         return Err(JsonError::JsonParseError(JsonParseError::UnexpectedToken(
-            last_token,
+            last_token.clone(),
         )));
     }
     let remaining_tokens = &tokens[1..tokens.len() - 1];
     match first_token {
-        Token::StartOfDict => parse_dict(remaining_tokens), // TODO if error, wrap in
-        // JsonError::JsonParseError
-        Tokens::StartOfList => parse_list(remaining_tokens),
+        Token::StartOfDict => {
+            let result = parse_dict(remaining_tokens);
+            match result {
+                Ok(r) => Ok(r),
+                Err(e) => Err(JsonError::JsonParseError(e))
+            }
+        },
+        Token::StartOfList => {
+            let result = parse_list(remaining_tokens);
+            match result {
+                Ok(r) => Ok(r),
+                Err(e) => Err(JsonError::JsonParseError(e)),
+            }
+        },
         _ => Err(JsonError::JsonParseError(
             JsonParseError::UnexpectedEndOfInput,
         )),
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_full() {
+        let json = r#"
+        {
+            "key1": 1,
+            "key2": "value2",
+            "key3": [1, 2, 3],
+            "key4": {
+                "key5": "value5",
+                "key6": 6
+            }
+        }
+        "#;
+        let parsed = parse(json);
+        println!("{:?}", parsed);
     }
 }
