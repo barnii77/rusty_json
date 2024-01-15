@@ -8,7 +8,7 @@ pub enum JsonLexError {
     InvalidSyntax(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Constant {
     Float(f64),
     Int(isize),
@@ -43,7 +43,7 @@ impl FromStr for Constant {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum Token {
     // StartOfSequence,
     StartOfDict,
@@ -322,7 +322,7 @@ impl<'a> Iterator for Tokenizer<'a> {
 }
 
 // not actually needed (because of Tokenizer), but won't delete it either.
-fn tokenize(json: &str) -> Result<Vec<Token>, JsonLexError> {
+pub fn tokenize(json: &str) -> Result<Vec<Token>, JsonLexError> {
     let mut tokens: Vec<Token> = vec![];
     let mut state = LexState::new();
     for c in json.chars() {
