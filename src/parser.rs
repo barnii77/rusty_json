@@ -21,7 +21,7 @@ pub enum JsonParseError {
     UnexpectedEndOfInput,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Json {
     Dict(HashMap<String, Json>),
     List(Vec<Json>),
@@ -198,48 +198,38 @@ pub fn parse(json: &str) -> Result<Json, JsonError> {
             JsonParseError::UnexpectedEndOfInput,
         ));
     }
-    let first_token_option = tokens.iter().next();
-    let first_token = match first_token_option {
-        Some(token) => token,
-        None => {
-            return Err(JsonError::JsonParseError(
-                JsonParseError::UnexpectedEndOfInput,
-            ))
-        }
-    };
-    let last_token_option = tokens.iter().last();
-    let last_token = match last_token_option {
-        Some(token) => token,
-        None => {
-            return Err(JsonError::JsonParseError(
-                JsonParseError::UnexpectedEndOfInput,
-            ))
-        }
-    };
-    if first_token != last_token {
-        return Err(JsonError::JsonParseError(JsonParseError::UnexpectedToken(
-            last_token.clone(),
-        )));
-    }
+    let first_token = &tokens[0]; // safe because length is checked
+    let last_token = &tokens[tokens.len() - 1]; // safe because length is checked
     let remaining_tokens = &tokens[1..tokens.len() - 1];
+
     match first_token {
         Token::StartOfDict => {
+            if last_token != &Token::EndOfDict {
+                return Err(JsonError::JsonParseError(JsonParseError::UnexpectedToken(
+                    last_token.clone(),
+                )));
+            }
             let result = parse_dict(remaining_tokens);
             match result {
                 Ok(r) => Ok(r),
-                Err(e) => Err(JsonError::JsonParseError(e))
+                Err(e) => Err(JsonError::JsonParseError(e)),
             }
-        },
+        }
         Token::StartOfList => {
+            if last_token != &Token::EndOfList {
+                return Err(JsonError::JsonParseError(JsonParseError::UnexpectedToken(
+                    last_token.clone(),
+                )));
+            }
             let result = parse_list(remaining_tokens);
             match result {
                 Ok(r) => Ok(r),
                 Err(e) => Err(JsonError::JsonParseError(e)),
             }
-        },
-        _ => Err(JsonError::JsonParseError(
-            JsonParseError::UnexpectedEndOfInput,
-        )),
+        }
+        _ => Err(JsonError::JsonParseError(JsonParseError::UnexpectedToken(
+            first_token.clone(),
+        ))),
     }
 }
 
@@ -248,7 +238,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_full() {
+    fn test_full_valid_json() {
         let json = r#"
         {
             "key1": 1,
@@ -260,7 +250,65 @@ mod test {
             }
         }
         "#;
-        let parsed = parse(json);
+        let parsed = match parse(json) {
+            Ok(p) => p,
+            Err(e) => panic!("{:?}", e),
+        };
+
+        let expected_json = {
+            let mut expected_output = HashMap::new();
+            expected_output.insert("key1".to_string(), Json::Value(Constant::Int(1)));
+            expected_output.insert("key2".to_string(), Json::Value(Constant::StringLiteral("value2".to_string())));
+            expected_output.insert("key3".to_string(), Json::List(vec![
+                Json::Value(Constant::Int(1)),
+                Json::Value(Constant::Int(2)),
+                Json::Value(Constant::Int(3)),
+            ]));
+            let mut key4_map = HashMap::new();
+            key4_map.insert("key5".to_string(), Json::Value(Constant::StringLiteral("value5".to_string())));
+            key4_map.insert("key6".to_string(), Json::Value(Constant::Int(6)));
+            expected_output.insert("key4".to_string(), Json::Dict(key4_map));
+            Json::Dict(expected_output)
+        };
+        assert_eq!(parsed, expected_json);
         println!("{:?}", parsed);
     }
+
+    #[test]
+    fn test_full_invalid_json() { // TODO figure out why it panics is the json is invalid
+        let json = r#"
+        {
+            "key1": 1,
+            "key2": "value2",
+            "key3": [1, 2, 3],
+            "key4": {
+                "key5": "value5",
+                key6": 6
+            }
+        }
+        "#;
+        let parsed = match parse(json) {
+            Ok(p) => p,
+            Err(e) => panic!("{:?}", e),
+        };
+
+        let expected_json = {
+            let mut expected_output = HashMap::new();
+            expected_output.insert("key1".to_string(), Json::Value(Constant::Int(1)));
+            expected_output.insert("key2".to_string(), Json::Value(Constant::StringLiteral("value2".to_string())));
+            expected_output.insert("key3".to_string(), Json::List(vec![
+                Json::Value(Constant::Int(1)),
+                Json::Value(Constant::Int(2)),
+                Json::Value(Constant::Int(3)),
+            ]));
+            let mut key4_map = HashMap::new();
+            key4_map.insert("key5".to_string(), Json::Value(Constant::StringLiteral("value5".to_string())));
+            key4_map.insert("key6".to_string(), Json::Value(Constant::Int(6)));
+            expected_output.insert("key4".to_string(), Json::Dict(key4_map));
+            Json::Dict(expected_output)
+        };
+        assert_eq!(parsed, expected_json);
+        println!("{:?}", parsed);
+    }
+
 }

@@ -82,8 +82,10 @@ impl FromStr for Token {
 enum LexStateType {
     // TODO add True and False states
     Any,
-    Numeric,
-    Int,
+    Numeric, // this is either float or int (in the case of int, we never know if there is comma
+    // coming at some point, so there is no state for int because when we could conclude with
+    // certainty that it's the correct state, we don't need the state anymore as we can also just
+    // parse it right away)
     Float,
     String,
     Null,
@@ -149,13 +151,6 @@ impl LexState {
                     self.state = LexStateType::Invalid;
                 }
             }
-            LexStateType::Int => {
-                if c.is_numeric() {
-                    self.state = LexStateType::Int;
-                } else {
-                    self.state = LexStateType::Invalid;
-                }
-            }
             LexStateType::Float => {
                 if c.is_numeric() {
                     self.state = LexStateType::Float;
@@ -206,7 +201,6 @@ impl LexState {
         match self.state {
             LexStateType::Any => false,
             LexStateType::Numeric => !(c.is_numeric() || c == '.'),
-            LexStateType::Int => !c.is_numeric(),
             LexStateType::Float => !c.is_numeric(),
             LexStateType::String => {
                 // The following checks if the previous character is " &
@@ -242,7 +236,6 @@ impl LexState {
         match self.state {
             LexStateType::Any => true,
             LexStateType::Numeric => c.is_numeric() || c == '.',
-            LexStateType::Int => c.is_numeric(),
             LexStateType::Float => c.is_numeric(),
             LexStateType::String => {
                 self.buffer
@@ -373,8 +366,8 @@ mod test {
     }
 
     #[test]
-    fn test_tokenize_2() {
-        let json = r#"
+    fn test_tokenize_invalid_json() {
+        /* let json = r#"
         {
             "key1": 1,
             "key2": "value2",
@@ -384,7 +377,19 @@ mod test {
                 "key6": 6
             }
         }
+        "#; */
+        let json = r#"
+        {
+            "key1": 1,
+            "key2": "value2",
+            key3": [1, 2, 3],
+            "key4": {
+                "key5": "value5",
+                "key6": 6
+            }
+        }
         "#;
+
         let tokens = tokenize(json).expect("This should not crash");
         println!("**Tokens**: {:?}", tokens);
     }
@@ -394,17 +399,17 @@ mod test {
         let json = r#"{"key": "value"}"#;
         let mut tokenizer = Tokenizer::new(json);
         while let Some(token) = tokenizer.next() {
-            println!("Token: {:?}", token);
+            println!("Token: {:?}", token.expect("should not crash"));
         }
     }
 
     #[test]
-    fn test_tokenizer_2() {
+    fn test_tokenizer_invalid_json() {
         let json = r#"
         {
             "key1": 1,
             "key2": "value2",
-            "key3": [1, 2, 3],
+            key3": [1, 2, 3],
             "key4": {
                 "key5": "value5",
                 "key6": 6
@@ -413,7 +418,7 @@ mod test {
         "#;
         let mut tokenizer = Tokenizer::new(json);
         while let Some(token) = tokenizer.next() {
-            println!("Token: {:?}", token);
+            println!("Token: {:?}", token.expect("should not crash"));
         }
     }
 }
