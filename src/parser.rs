@@ -275,7 +275,8 @@ mod test {
     }
 
     #[test]
-    fn test_full_invalid_json() { // TODO figure out why it panics is the json is invalid
+    #[should_panic]
+    fn test_full_invalid_json() { // FIXME figure out why it panics is the json is invalid
         let json = r#"
         {
             "key1": 1,

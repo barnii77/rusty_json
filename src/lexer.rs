@@ -285,11 +285,10 @@ impl<'a> Iterator for Tokenizer<'a> {
     type Item = Result<Token, JsonLexError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.state.is_invalid() {
-            return None;
-        }
         for c in self.json.by_ref() {
-            if self.state.allows(c) {
+            if self.state.is_invalid() {
+                return Some(Err(Token::from_str(&self.state.buffer).unwrap_err()));
+            } else if self.state.allows(c) {
                 self.state.encorporate(c);
             } else if self.state.is_terminated_by(c) {
                 let token_result = Token::from_str(&self.state.buffer);
@@ -300,14 +299,14 @@ impl<'a> Iterator for Tokenizer<'a> {
                     };
                 } else {
                     self.state = LexState::new();
-                    self.state.encorporate(c);
+                    self.state.encorporate(c); // NOTE: Need to handle errors here as well
                 }
                 return Some(token_result);
             } else {
                 // not allowed + not terminated by -> syntax error
                 self.state.buffer.push(c); // push the invalid character so that the conversion to token will
                                            // fail with appropriate error.
-                return Some(Err(Token::from_str(&self.state.buffer).unwrap_err()));
+                                           // NOTE: next iteration of for loop will error because state is invalid
             }
         }
         if !self.state.is_any() {
@@ -325,7 +324,9 @@ pub fn tokenize(json: &str) -> Result<Vec<Token>, JsonLexError> {
     let mut tokens: Vec<Token> = vec![];
     let mut state = LexState::new();
     for c in json.chars() {
-        if state.allows(c) {
+        if state.is_invalid() {
+            return Err(Token::from_str(&state.buffer).unwrap_err());
+        } else if state.allows(c) {
             state.encorporate(c);
         } else if state.is_terminated_by(c) {
             tokens.push(Token::from_str(&state.buffer)?);
@@ -366,6 +367,7 @@ mod test {
     }
 
     #[test]
+    #[should_panic]
     fn test_tokenize_invalid_json() {
         /* let json = r#"
         {
@@ -382,10 +384,10 @@ mod test {
         {
             "key1": 1,
             "key2": "value2",
-            key3": [1, 2, 3],
+            "key3": [1, 2, 3],
             "key4": {
                 "key5": "value5",
-                "key6": 6
+                key6": 6
             }
         }
         "#;
@@ -404,15 +406,16 @@ mod test {
     }
 
     #[test]
+    #[should_panic]
     fn test_tokenizer_invalid_json() {
         let json = r#"
         {
             "key1": 1,
             "key2": "value2",
-            key3": [1, 2, 3],
+            "key3": [1, 2, 3],
             "key4": {
                 "key5": "value5",
-                "key6": 6
+                key6": 6
             }
         }
         "#;
