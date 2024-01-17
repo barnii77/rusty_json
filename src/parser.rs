@@ -258,14 +258,23 @@ mod test {
         let expected_json = {
             let mut expected_output = HashMap::new();
             expected_output.insert("key1".to_string(), Json::Value(Constant::Int(1)));
-            expected_output.insert("key2".to_string(), Json::Value(Constant::StringLiteral("value2".to_string())));
-            expected_output.insert("key3".to_string(), Json::List(vec![
-                Json::Value(Constant::Int(1)),
-                Json::Value(Constant::Int(2)),
-                Json::Value(Constant::Int(3)),
-            ]));
+            expected_output.insert(
+                "key2".to_string(),
+                Json::Value(Constant::StringLiteral("value2".to_string())),
+            );
+            expected_output.insert(
+                "key3".to_string(),
+                Json::List(vec![
+                    Json::Value(Constant::Int(1)),
+                    Json::Value(Constant::Int(2)),
+                    Json::Value(Constant::Int(3)),
+                ]),
+            );
             let mut key4_map = HashMap::new();
-            key4_map.insert("key5".to_string(), Json::Value(Constant::StringLiteral("value5".to_string())));
+            key4_map.insert(
+                "key5".to_string(),
+                Json::Value(Constant::StringLiteral("value5".to_string())),
+            );
             key4_map.insert("key6".to_string(), Json::Value(Constant::Int(6)));
             expected_output.insert("key4".to_string(), Json::Dict(key4_map));
             Json::Dict(expected_output)
@@ -276,7 +285,8 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn test_full_invalid_json() { // FIXME figure out why it panics is the json is invalid
+    fn test_full_invalid_json() {
+        // FIXME figure out why it panics is the json is invalid
         let json = r#"
         {
             "key1": 1,
@@ -296,14 +306,23 @@ mod test {
         let expected_json = {
             let mut expected_output = HashMap::new();
             expected_output.insert("key1".to_string(), Json::Value(Constant::Int(1)));
-            expected_output.insert("key2".to_string(), Json::Value(Constant::StringLiteral("value2".to_string())));
-            expected_output.insert("key3".to_string(), Json::List(vec![
-                Json::Value(Constant::Int(1)),
-                Json::Value(Constant::Int(2)),
-                Json::Value(Constant::Int(3)),
-            ]));
+            expected_output.insert(
+                "key2".to_string(),
+                Json::Value(Constant::StringLiteral("value2".to_string())),
+            );
+            expected_output.insert(
+                "key3".to_string(),
+                Json::List(vec![
+                    Json::Value(Constant::Int(1)),
+                    Json::Value(Constant::Int(2)),
+                    Json::Value(Constant::Int(3)),
+                ]),
+            );
             let mut key4_map = HashMap::new();
-            key4_map.insert("key5".to_string(), Json::Value(Constant::StringLiteral("value5".to_string())));
+            key4_map.insert(
+                "key5".to_string(),
+                Json::Value(Constant::StringLiteral("value5".to_string())),
+            );
             key4_map.insert("key6".to_string(), Json::Value(Constant::Int(6)));
             expected_output.insert("key4".to_string(), Json::Dict(key4_map));
             Json::Dict(expected_output)
@@ -311,5 +330,4 @@ mod test {
         assert_eq!(parsed, expected_json);
         println!("{:?}", parsed);
     }
-
 }
