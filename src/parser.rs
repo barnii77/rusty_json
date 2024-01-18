@@ -284,9 +284,8 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
-    fn test_full_invalid_json() {
-        // FIXME figure out why it panics is the json is invalid
+    #[should_panic(expected="Error returned")]
+    fn test_full_invalid_json_lex_error() {
         let json = r#"
         {
             "key1": 1,
@@ -300,7 +299,54 @@ mod test {
         "#;
         let parsed = match parse(json) {
             Ok(p) => p,
-            Err(e) => panic!("{:?}", e),
+            Err(e) => panic!("Error returned: {:?}", e),
+        };
+
+        let expected_json = {
+            let mut expected_output = HashMap::new();
+            expected_output.insert("key1".to_string(), Json::Value(Constant::Int(1)));
+            expected_output.insert(
+                "key2".to_string(),
+                Json::Value(Constant::StringLiteral("value2".to_string())),
+            );
+            expected_output.insert(
+                "key3".to_string(),
+                Json::List(vec![
+                    Json::Value(Constant::Int(1)),
+                    Json::Value(Constant::Int(2)),
+                    Json::Value(Constant::Int(3)),
+                ]),
+            );
+            let mut key4_map = HashMap::new();
+            key4_map.insert(
+                "key5".to_string(),
+                Json::Value(Constant::StringLiteral("value5".to_string())),
+            );
+            key4_map.insert("key6".to_string(), Json::Value(Constant::Int(6)));
+            expected_output.insert("key4".to_string(), Json::Dict(key4_map));
+            Json::Dict(expected_output)
+        };
+        assert_eq!(parsed, expected_json);
+        println!("{:?}", parsed);
+    }
+
+    #[test]
+    #[should_panic(expected="Error returned")]
+    fn test_full_invalid_json_parse_error() {
+        let json = r#"
+        {
+            "key1": ,
+            "key2": "value2",
+            "key3": [1, 2, 3],
+            "key4": {
+                "key5": "value5",
+                "key6": 6
+            }
+        }
+        "#;
+        let parsed = match parse(json) {
+            Ok(p) => p,
+            Err(e) => panic!("Error returned: {:?}", e),
         };
 
         let expected_json = {

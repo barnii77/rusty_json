@@ -367,7 +367,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected="Error returned")]
     fn test_tokenize_invalid_json() {
         /* let json = r#"
         {
@@ -392,7 +392,10 @@ mod test {
         }
         "#;
 
-        let tokens = tokenize(json).expect("This should not crash");
+        let tokens = match tokenize(json) {
+            Ok(tokens) => tokens,
+            Err(err) => panic!("Error returned: {:?}", err),
+        };
         println!("**Tokens**: {:?}", tokens);
     }
 
@@ -406,7 +409,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected="Error returned")]
     fn test_tokenizer_invalid_json() {
         let json = r#"
         {
@@ -421,7 +424,11 @@ mod test {
         "#;
         let mut tokenizer = Tokenizer::new(json);
         while let Some(token) = tokenizer.next() {
-            println!("Token: {:?}", token.expect("should not crash"));
+            let token = match token {
+                Ok(token) => token,
+                Err(err) => panic!("Error returned: {:?}", err),
+            };
+            println!("Token: {:?}", token);
         }
     }
 }
