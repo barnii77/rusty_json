@@ -2,9 +2,6 @@ use crate::lexer::{tokenize, Constant, JsonLexError, Token};
 use std::collections::HashMap;
 use thiserror::Error;
 
-// TODO create a datastructure that can store the json
-// TODO create a parser that can parse the tokenized json to this datastructure
-
 #[derive(Debug, Error)]
 pub enum JsonError {
     #[error("JsonLexError: {0}")]

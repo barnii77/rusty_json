@@ -45,7 +45,6 @@ impl FromStr for Constant {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
-    // StartOfSequence,
     StartOfDict,
     StartOfList,
     EndOfDict,
@@ -80,7 +79,6 @@ impl FromStr for Token {
 
 #[derive(PartialEq)]
 enum LexStateType {
-    // TODO add True and False states
     Any,
     Numeric, // this is either float or int (in the case of int, we never know if there is comma
     // coming at some point, so there is no state for int because when we could conclude with
